@@ -1,6 +1,12 @@
-# StudyPad Frontend
+# StudyPad Web
 
 A modern, self-hosted AI learning platform frontend built with Next.js 14, designed for businesses and organizations that need to keep their data private while leveraging AI capabilities.
+
+## 📦 Related Repositories
+
+- **Backend API**: [studypad-backend](https://github.com/qvidal01/studypadlm) - Python FastAPI backend
+- **Mobile App**: [studypad-mobile](https://github.com/qvidal01/studypad-mobile) - Flutter iOS/Android app
+- **API Documentation**: See backend repo's [API_ENDPOINTS.md](https://github.com/qvidal01/studypadlm/blob/main/API_ENDPOINTS.md)
 
 ## 🌟 Features
 
