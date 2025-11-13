@@ -2,16 +2,19 @@
  * Application configuration with environment variable validation
  */
 
-const requiredEnvVars = ['NEXT_PUBLIC_API_URL'] as const;
+// Define environment variables directly so Next.js can inline them
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+const NEXT_PUBLIC_APP_NAME = process.env.NEXT_PUBLIC_APP_NAME;
+const NEXT_PUBLIC_APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION;
+const NEXT_PUBLIC_ENABLE_STUDIO = process.env.NEXT_PUBLIC_ENABLE_STUDIO;
+const NEXT_PUBLIC_MAX_UPLOAD_SIZE = process.env.NEXT_PUBLIC_MAX_UPLOAD_SIZE;
 
 function validateEnv() {
   const missing: string[] = [];
 
-  requiredEnvVars.forEach((envVar) => {
-    if (!process.env[envVar]) {
-      missing.push(envVar);
-    }
-  });
+  if (!NEXT_PUBLIC_API_URL) {
+    missing.push('NEXT_PUBLIC_API_URL');
+  }
 
   if (missing.length > 0) {
     throw new Error(
@@ -28,18 +31,18 @@ if (typeof window !== 'undefined') {
 
 export const config = {
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    baseUrl: NEXT_PUBLIC_API_URL || 'http://localhost:8000',
     timeout: 60000, // 60 seconds
     retryAttempts: 3,
     retryDelay: 1000, // 1 second
   },
   app: {
-    name: process.env.NEXT_PUBLIC_APP_NAME || 'StudyPad',
-    version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
-    studioEnabled: process.env.NEXT_PUBLIC_ENABLE_STUDIO === 'true',
+    name: NEXT_PUBLIC_APP_NAME || 'StudyPad',
+    version: NEXT_PUBLIC_APP_VERSION || '1.0.0',
+    studioEnabled: NEXT_PUBLIC_ENABLE_STUDIO === 'true',
   },
   upload: {
-    maxSize: parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_SIZE || '10485760', 10), // 10MB default
+    maxSize: parseInt(NEXT_PUBLIC_MAX_UPLOAD_SIZE || '10485760', 10), // 10MB default
     allowedTypes: ['application/pdf'] as string[],
     maxFileSizeMB: 10,
   },
