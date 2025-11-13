@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useChatStore } from '@/stores/chat-store';
 import { useDocuments } from '@/hooks/use-documents';
 import { api } from '@/lib/api/client';
-import { Send, Loader2, FileText } from 'lucide-react';
+import { config } from '@/lib/config';
+import { Send, Loader2, FileText, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -131,7 +132,7 @@ export default function ChatPage() {
                           {message.sources && message.sources.length > 0 && (
                             <div className="mt-2 pt-2 border-t">
                               <p className="text-xs font-semibold mb-1">Sources:</p>
-                              {message.sources.slice(0, 3).map((source, idx) => (
+                              {message.sources.slice(0, config.query.maxSourcesDisplay).map((source, idx) => (
                                 <div
                                   key={idx}
                                   className="text-xs bg-background/50 p-2 rounded mb-1"
@@ -145,6 +146,17 @@ export default function ChatPage() {
                                   <p className="line-clamp-2">{source.content}</p>
                                 </div>
                               ))}
+                              {message.sources.length > config.query.maxSourcesDisplay && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  +{message.sources.length - config.query.maxSourcesDisplay} more source(s)
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {message.content.startsWith('Error:') && (
+                            <div className="flex items-center gap-2 mt-2 text-destructive">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs">An error occurred processing your request</span>
                             </div>
                           )}
                         </>

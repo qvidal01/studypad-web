@@ -7,9 +7,14 @@ interface StudioStore {
   updateJob: (id: string, updates: Partial<StudioJob>) => void;
   removeJob: (id: string) => void;
   clearJobs: () => void;
+  getJobById: (id: string) => StudioJob | undefined;
+  getJobsByDocId: (docId: string) => StudioJob[];
 }
 
-export const useStudioStore = create<StudioStore>((set) => ({
+/**
+ * Studio store for managing content generation jobs with type-safe operations
+ */
+export const useStudioStore = create<StudioStore>((set, get) => ({
   jobs: [],
 
   addJob: (job) =>
@@ -35,4 +40,12 @@ export const useStudioStore = create<StudioStore>((set) => ({
     })),
 
   clearJobs: () => set({ jobs: [] }),
+
+  getJobById: (id) => {
+    return get().jobs.find((job) => job.id === id);
+  },
+
+  getJobsByDocId: (docId) => {
+    return get().jobs.filter((job) => job.doc_id === docId);
+  },
 }));
