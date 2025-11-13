@@ -10,9 +10,13 @@ interface ChatStore {
   clearMessages: () => void;
   setCurrentDocId: (docId: string | null) => void;
   setLoading: (loading: boolean) => void;
+  getMessageById: (id: string) => ChatMessage | undefined;
 }
 
-export const useChatStore = create<ChatStore>((set) => ({
+/**
+ * Chat store for managing conversation state with type-safe operations
+ */
+export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   currentDocId: null,
   isLoading: false,
@@ -39,4 +43,8 @@ export const useChatStore = create<ChatStore>((set) => ({
   setCurrentDocId: (docId) => set({ currentDocId: docId }),
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  getMessageById: (id) => {
+    return get().messages.find((msg) => msg.id === id);
+  },
 }));

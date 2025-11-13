@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUploadDocument } from '@/hooks/use-documents';
 import { Upload, FileText, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { config } from '@/lib/config';
 
 interface UploadItem {
   file: File;
@@ -23,72 +24,110 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const uploadMutation = useUploadDocument();
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const validateFiles = useCallback((files: File[]): { valid: File[]; invalid: File[] } => {
+    const valid: File[] = [];
+    const invalid: File[] = [];
 
-    const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
+    files.forEach((file) => {
+      // Check file type
+      if (!config.upload.allowedTypes.includes(file.type)) {
+        invalid.push(file);
+        toast.error(`${file.name} is not a PDF file`);
+        return;
+      }
+
+      // Check file size
+      if (file.size > config.upload.maxSize) {
+        invalid.push(file);
+        toast.error(
+          `${file.name} exceeds maximum size of ${config.upload.maxFileSizeMB}MB`
+        );
+        return;
+      }
+
+      valid.push(file);
+    });
+
+    return { valid, invalid };
   }, []);
+
+  const uploadFile = useCallback(
+    async (upload: UploadItem) => {
+      setUploads((prev) =>
+        prev.map((u) => (u.file === upload.file ? { ...u, status: 'uploading' } : u))
+      );
+
+      try {
+        const data = await uploadMutation.mutateAsync({
+          file: upload.file,
+          onProgress: (progress) => {
+            setUploads((prev) =>
+              prev.map((u) => (u.file === upload.file ? { ...u, progress } : u))
+            );
+          },
+        });
+
+        setUploads((prev) =>
+          prev.map((u) =>
+            u.file === upload.file
+              ? { ...u, status: 'complete', progress: 100, docId: data.doc_id }
+              : u
+          )
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+        setUploads((prev) =>
+          prev.map((u) =>
+            u.file === upload.file ? { ...u, status: 'error', error: errorMessage } : u
+          )
+        );
+      }
+    },
+    [uploadMutation]
+  );
+
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
+
+      const { valid: validFiles } = validateFiles(files);
+
+      if (validFiles.length === 0) {
+        toast.error('No valid files to upload');
+        return;
+      }
+
+      const newUploads: UploadItem[] = validFiles.map((file) => ({
+        file,
+        progress: 0,
+        status: 'pending',
+      }));
+
+      setUploads((prev) => [...prev, ...newUploads]);
+
+      // Upload files one by one
+      for (const upload of newUploads) {
+        await uploadFile(upload);
+      }
+    },
+    [validateFiles, uploadFile]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      handleFiles(files);
+    },
+    [handleFiles]
+  );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       handleFiles(files);
-    }
-  };
-
-  const handleFiles = async (files: File[]) => {
-    const pdfFiles = files.filter((file) => file.type === 'application/pdf');
-
-    if (pdfFiles.length === 0) {
-      toast.error('Please select PDF files only');
-      return;
-    }
-
-    const newUploads: UploadItem[] = pdfFiles.map((file) => ({
-      file,
-      progress: 0,
-      status: 'pending',
-    }));
-
-    setUploads((prev) => [...prev, ...newUploads]);
-
-    // Upload files one by one
-    for (const upload of newUploads) {
-      await uploadFile(upload);
-    }
-  };
-
-  const uploadFile = async (upload: UploadItem) => {
-    setUploads((prev) =>
-      prev.map((u) => (u.file === upload.file ? { ...u, status: 'uploading' } : u))
-    );
-
-    try {
-      const data = await uploadMutation.mutateAsync({
-        file: upload.file,
-        onProgress: (progress) => {
-          setUploads((prev) =>
-            prev.map((u) => (u.file === upload.file ? { ...u, progress } : u))
-          );
-        },
-      });
-
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.file === upload.file
-            ? { ...u, status: 'complete', progress: 100, docId: data.doc_id }
-            : u
-        )
-      );
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.file === upload.file ? { ...u, status: 'error', error: errorMessage } : u
-        )
-      );
     }
   };
 
@@ -126,7 +165,7 @@ export default function UploadPage() {
               Drop PDF files here or click to browse
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Supports PDF files up to 10MB
+              Supports PDF files up to {config.upload.maxFileSizeMB}MB
             </p>
             <Button asChild>
               <label htmlFor="file-upload" className="cursor-pointer">
